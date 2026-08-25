@@ -35,6 +35,8 @@ async function registerUserController(req, res) {
         password: hash
     });
 
+    await user.save();
+
     const token = jwt.sign({
         id: user._id,
         username: user.username,
@@ -56,6 +58,7 @@ async function registerUserController(req, res) {
 
 
 /**
+ *  @route POST /api/auth/login
  * @name loginUserController
  * @description login a user, expects email and password in the request body, verifies the credentials, and returns a JWT token if successful.
  * @access Public
@@ -64,33 +67,54 @@ async function registerUserController(req, res) {
 async function loginUserController(req, res) {
     const { email, password } = req.body;
 
-    const user = await userModel.findOne({ email});
-
-    if(!user) {
-        return res.status(400).json({ message: 'Invalid credentials' });
+    if (!email || !password) {
+        return res.status(400).json({
+            message: 'Email and password are required'
+        });
     }
 
-    const isPasswordVaild = await bycrpt.compare(password, user.password);
+    const user = await userModel.findOne({ email });
 
-    if(!isPasswordVaild){
-        res.status(400).json({message : ' Invalid credentials'});
+    if (!user) {
+        return res.status(400).json({
+            message: 'Invalid credentials'
+        });
     }
 
-    const token = jwt.sign({
-        id: user._id,
-        username: user.username,
-    }, process.env.JWT_SECRET,{expiresIn: '1d'})
+    // FIX: bcrypt, not bycrpt
+    const isPasswordValid = await bcrypt.compare(password, user.password);
 
-    res.cookie('token', token)
+    if (!isPasswordValid) {
+        return res.status(400).json({
+            message: 'Invalid credentials'
+        });
+    }
 
-    res.status(200).json({
-        message : 'User logged in successfully',
-        user:{
-            id : user._id,
-            username : user.username,
-            email : user.email
+    const token = jwt.sign(
+        {
+            id: user._id,
+            username: user.username
+        },
+        process.env.JWT_SECRET,
+        {
+            expiresIn: '1d'
         }
-    })
+    );
+
+    res.cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax'
+    });
+
+    return res.status(200).json({
+        message: 'User logged in successfully',
+        user: {
+            id: user._id,
+            username: user.username,
+            email: user.email
+        }
+    });
 }
 module.exports = {
     registerUserController,
