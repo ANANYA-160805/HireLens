@@ -1,20 +1,15 @@
 require('dotenv').config();
-const express = require('express');
-const connectToDB = require('./config/database');
 
-connectToDB();
+const express = require('express');
+const cookieParser = require('cookie-parser');
+
+const authRouter = require('./routes/auth.routes');
 
 const app = express();
 
 app.use(express.json());
+app.use(cookieParser());
 
-/* require all the routes */
-const authRouter = require('./routes/auth.routes');
-
-
-/* use all the routes */
 app.use('/api/auth', authRouter);
-
-
 
 module.exports = app;
