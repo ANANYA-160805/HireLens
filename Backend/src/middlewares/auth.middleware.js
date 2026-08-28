@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const tokenBlacklist = require('../models/blacklist.model');
 
 
 
@@ -7,6 +8,12 @@ function authUser(req, res, next){
 
     if(!token){
         return res.status(401).json({message: 'Unauthorized, token not found'});
+    }
+
+    const isTokenBlackListed = tokenBlacklist.findOne({token});
+
+    if(isTokenBlackListed){
+        return res.status(401).json({message: 'Unauthorized,token is blacklisted'});
     }
 
    try{
