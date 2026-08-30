@@ -1,15 +1,26 @@
+import React from "react";
+import{ useNavigate, Link } from "react-router";
+import "../auth.form.scss";
+
 const Login = () => {
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    // Handle form submission logic here
+  }
+
   return (
     <main>
       <div className="form-container">
-        <h1>Login Page</h1>
+        <h1>Login</h1>
 
-        <form >
+        <form onSubmit={handleSubmit}>
 
           <div className="input-group">
             <label htmlFor="email">Email</label>
             <input type="email" id="email" name="email" placeholder="Enter your email" />
           </div>
+          
           <div className="input-group">
             <label htmlFor="password">Password</label>
             <input type="password" id="password" name="password" placeholder="Enter your password" />
@@ -17,6 +28,8 @@ const Login = () => {
 
           <button className="button primary-button">Login</button>
         </form>
+
+         <p>Don't have an account? <Link to={"/register"}>Register</Link></p>
       </div>
     </main>
   );
