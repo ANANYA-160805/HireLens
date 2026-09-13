@@ -31,8 +31,23 @@ const interviewReportSchema = z.object({
 })
 
 
-async function generateInterviewReport(jobDescription, resumeText, selfDescription) {
+async function generateInterviewReport(jobDescription, resume, selfDescription) {
+ const prompt = `Generate an interview report for a candidate with the following details:
+                        Resume: ${resume}
+                        Self Description: ${selfDescription}
+                        Job Description: ${jobDescription}
+`
 
+    const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: prompt,
+        config: {
+            responseMimeType: "application/json",
+            responseSchema: zodToJsonSchema(interviewReportSchema),
+        }
+    })
+
+    return JSON.parse(response.text)
 }
 
 module.exports = invokeGeminiAi;
