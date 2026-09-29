@@ -1,4 +1,4 @@
-main {
+.auth-page {
   position: relative;
   min-height: 100vh;
   width: 100%;
@@ -7,46 +7,46 @@ main {
   align-items: center;
   padding: 2rem 1rem;
   overflow: hidden;
-  background: radial-gradient(circle at top left, rgba(97, 125, 255, 0.14), transparent 32%), radial-gradient(circle at bottom right, rgba(103, 181, 255, 0.14), transparent 30%), linear-gradient(135deg, #f4f7ff 0%, #eef3ff 35%, #f8fafc 100%);
+  background: radial-gradient(circle at top left, rgba(22, 143, 145, 0.14), transparent 32%), radial-gradient(circle at bottom right, rgba(23, 105, 93, 0.12), transparent 30%), linear-gradient(135deg, #f2f7f3 0%, #edf5f1 42%, #f8fbf9 100%);
 }
-main.loading-screen {
+.auth-page.loading-screen {
   flex-direction: column;
   gap: 1rem;
-  color: #1f2937;
+  color: #172423;
 }
-main.loading-screen p {
-  color: #1f2937;
+.auth-page.loading-screen p {
+  color: #172423;
   font-weight: 600;
 }
-main .loading-spinner {
+.auth-page .loading-spinner {
   width: 2.5rem;
   height: 2.5rem;
-  border: 4px solid rgba(55, 86, 215, 0.2);
-  border-top-color: #3756d7;
+  border: 4px solid rgba(22, 143, 145, 0.2);
+  border-top-color: #168f91;
   border-radius: 50%;
   animation: loading-spin 0.8s linear infinite;
 }
-main::before, main::after {
+.auth-page::before, .auth-page::after {
   content: "";
   position: absolute;
   border-radius: 50%;
   pointer-events: none;
-  background: rgba(128, 144, 255, 0.08);
+  background: rgba(22, 143, 145, 0.08);
   filter: blur(8px);
 }
-main::before {
+.auth-page::before {
   width: 22rem;
   height: 22rem;
   top: -7rem;
   left: -4rem;
 }
-main::after {
+.auth-page::after {
   width: 18rem;
   height: 18rem;
   right: -3rem;
   bottom: -5rem;
 }
-main .form-container {
+.auth-page .form-container {
   position: relative;
   z-index: 1;
   width: min(100%, 440px);
@@ -54,98 +54,98 @@ main .form-container {
   flex-direction: column;
   gap: 1.5rem;
   padding: 2.25rem 1.75rem;
-  border: 1px solid rgba(123, 138, 167, 0.18);
-  border-radius: 24px;
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 20px 50px rgba(20, 32, 61, 0.08);
+  border: 1px solid rgba(66, 112, 91, 0.16);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 20px 50px rgba(28, 72, 57, 0.09);
   backdrop-filter: blur(10px);
 }
-main h1 {
+.auth-page h1 {
   margin: 0;
   font-size: clamp(1.9rem, 3vw, 2.4rem);
   line-height: 1.15;
   font-weight: 700;
   letter-spacing: -0.04em;
-  color: #111827;
+  color: #172423;
 }
-main form {
+.auth-page form {
   display: flex;
   flex-direction: column;
   gap: 1.1rem;
 }
-main .input-group {
+.auth-page .input-group {
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
 }
-main label {
+.auth-page label {
   font-size: 0.88rem;
   font-weight: 600;
   line-height: 1.4;
-  color: #2d3748;
+  color: #344640;
 }
-main input {
+.auth-page input {
   width: 100%;
   height: 48px;
   padding: 0.85rem 0.95rem;
-  border: 1px solid #dfe6f2;
-  border-radius: 12px;
-  background: #f8faff;
-  color: #1f2937;
+  border: 1px solid #d5e4db;
+  border-radius: 9px;
+  background: #f8fbf9;
+  color: #172423;
   font-size: 1rem;
   line-height: 1.5;
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
-main input::-moz-placeholder {
-  color: #99a4b5;
+.auth-page input::-moz-placeholder {
+  color: #84958e;
 }
-main input::placeholder {
-  color: #99a4b5;
+.auth-page input::placeholder {
+  color: #84958e;
 }
-main input:focus {
+.auth-page input:focus {
   outline: none;
-  border-color: #4d75ff;
+  border-color: #168f91;
   background: #ffffff;
-  box-shadow: 0 0 0 4px rgba(77, 117, 255, 0.12);
+  box-shadow: 0 0 0 4px rgba(22, 143, 145, 0.14);
 }
-main .button.primary-button {
+.auth-page .button.primary-button {
   margin-top: 0.35rem;
   min-height: 48px;
 }
-main p {
+.auth-page p {
   margin: 0;
   text-align: center;
   font-size: 0.95rem;
   line-height: 1.5;
-  color: #5f6f86;
+  color: #60726c;
 }
-main a {
-  color: #3756d7;
+.auth-page a {
+  color: #17695d;
   font-weight: 600;
   text-decoration: none;
   transition: color 0.2s ease, text-decoration-color 0.2s ease;
 }
-main a:hover, main a:focus-visible {
-  color: #2949c5;
+.auth-page a:hover, .auth-page a:focus-visible {
+  color: #11564d;
   text-decoration: underline;
 }
 
 @media (max-width: 480px) {
-  main {
+  .auth-page {
     padding: 1rem;
   }
-  main .form-container {
+  .auth-page .form-container {
     padding: 1.5rem 1rem;
     border-radius: 18px;
     gap: 1.25rem;
   }
-  main h1 {
+  .auth-page h1 {
     font-size: 1.75rem;
   }
-  main input {
+  .auth-page input {
     height: 46px;
   }
-  main .button.primary-button {
+  .auth-page .button.primary-button {
     min-height: 46px;
   }
 }

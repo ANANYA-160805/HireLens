@@ -29,7 +29,7 @@ const Login = () => {
 
   if(loading){
     return (
-      <main className="loading-screen" aria-busy="true" aria-live="polite">
+      <main className="auth-page loading-screen" aria-busy="true" aria-live="polite">
         <div className="loading-spinner" aria-hidden="true" />
         <p>Loading...</p>
       </main>
@@ -37,7 +37,7 @@ const Login = () => {
   }
 
   return (
-    <main>
+    <main className="auth-page">
       <div className="form-container">
         <h1>Login</h1>
 
