@@ -18,7 +18,7 @@ const Login = () => {
 
     try {
       await handleLogin({email, password});
-      navigate("/");
+      navigate("/home");
     } catch (loginError) {
       setError(
         loginError.response?.data?.message ||

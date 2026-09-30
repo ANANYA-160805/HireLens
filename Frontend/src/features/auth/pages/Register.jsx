@@ -1,4 +1,4 @@
-import React, {useState} from 'react'
+import React from 'react'
 import { useNavigate, Link } from "react-router";
 import {useAuth} from "../hooks/useAuth";
 
@@ -19,7 +19,7 @@ const Register = () => {
 
      try {
       await handleRegister({username, email, password});
-      navigate("/");
+      navigate("/home");
     } catch (registerError) {
       setError(
         registerError.response?.data?.message ||

@@ -2,12 +2,18 @@ import { createBrowserRouter } from "react-router";
 import Login from "./features/auth/pages/Login.jsx";
 import Register from "./features/auth/pages/Register.jsx";
 import LandingPage from "./features/landing/LandingPage.jsx";
+import Home from "./features/interview/pages/Home.jsx";
 import { AuthProvider } from "./features/auth/auth.content.jsx";
+import Protected from "./features/auth/components/Protected.jsx";
 
 const router = createBrowserRouter([
   {
     path: "/",
     element: <LandingPage />,
+  },
+  {
+    path: "/home",
+    element: <AuthProvider><Protected><Home /></Protected></AuthProvider>,
   },
   {
     path: "/login",
