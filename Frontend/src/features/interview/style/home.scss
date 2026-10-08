@@ -507,6 +507,107 @@
 		text-align: center;
 	}
 
+	/* ---------- recent reports ---------- */
+	.recent-reports {
+		margin-top: 44px;
+		padding: 26px;
+		border: 1px solid var(--home-line);
+		border-radius: 16px;
+		background: rgba(255, 255, 255, 0.78);
+		box-shadow: 0 1px 2px rgba(23, 36, 35, 0.04), 0 14px 34px rgba(23, 36, 35, 0.06);
+	}
+
+	.recent-reports-heading {
+		display: flex;
+		align-items: end;
+		justify-content: space-between;
+		gap: 16px;
+		margin-bottom: 18px;
+
+		.home-eyebrow {
+			margin-bottom: 6px;
+		}
+
+		h2 {
+			margin: 0;
+			font-family: "Manrope", sans-serif;
+			font-size: 22px;
+		}
+
+		> span {
+			color: var(--home-muted);
+			font-size: 12px;
+		}
+	}
+
+	.recent-reports-empty {
+		margin: 0;
+		padding: 18px;
+		border-radius: 10px;
+		color: var(--home-muted);
+		background: #f4f8f5;
+		font-size: 13px;
+		text-align: center;
+	}
+
+	.recent-reports-list {
+		display: grid;
+		gap: 8px;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.recent-report {
+		display: flex;
+		align-items: center;
+		gap: 16px;
+		padding: 14px 16px;
+		border: 1px solid var(--home-line);
+		border-radius: 10px;
+		color: var(--home-ink);
+		background: #fff;
+		text-decoration: none;
+		transition: border-color 160ms ease, transform 160ms ease;
+
+		&:hover {
+			transform: translateY(-1px);
+			border-color: var(--home-teal);
+		}
+
+		&:focus-visible {
+			outline: 3px solid rgba(22, 143, 145, 0.3);
+			outline-offset: 2px;
+		}
+	}
+
+	.recent-report-info {
+		display: flex;
+		min-width: 0;
+		flex: 1;
+		flex-direction: column;
+		gap: 4px;
+
+		strong {
+			overflow: hidden;
+			font-size: 13px;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+
+		small {
+			color: var(--home-muted);
+			font-size: 11px;
+		}
+	}
+
+	.recent-report-score {
+		color: var(--home-green);
+		font-size: 12px;
+		font-weight: 700;
+		white-space: nowrap;
+	}
+
 	/* ---------- responsive ---------- */
 	@media (max-width: 900px) {
 		padding: 22px 6vw 52px;
@@ -544,6 +645,19 @@
 		.home-step {
 			font-size: 9px;
 			gap: 8px;
+		}
+
+		.recent-reports {
+			padding: 20px 14px;
+		}
+
+		.recent-report {
+			gap: 8px;
+			padding: 12px 10px;
+		}
+
+		.recent-report-score {
+			font-size: 10px;
 		}
 
 		.home-bar {

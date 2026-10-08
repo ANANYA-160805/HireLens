@@ -1,13 +1,15 @@
 import { useRef, useState } from 'react'
-import { Fingerprint, LoaderCircle } from 'lucide-react'
-import { useNavigate } from 'react-router'
-import { generateInterviewReport } from '../services/interview.api.js'
+import { ArrowUpRight, Fingerprint, LoaderCircle } from 'lucide-react'
+import { Link, useNavigate } from 'react-router'
+import { useInterview } from '../hooks/useinterview.js'
 import '../style/home.scss'
 
 const MAX_JD = 5000
 const MAX_FILE_MB = 3
 
 const Home = () => {
+
+  const { loading, generateReport, reports } = useInterview()
   const navigate = useNavigate()
   const [jobDescription, setJobDescription] = useState('')
   const [selfDescription, setSelfDescription] = useState('')
@@ -62,17 +64,15 @@ const Home = () => {
     setSubmitMessage('')
 
     try {
-      const result = await generateInterviewReport({
+      const report = await generateReport({
         jobDescription: jobDescription.trim(),
         selfDescription: selfDescription.trim(),
-        resume,
+        resumeFile: resume,
       })
-      const report = result.interviewReport
       const reportId = report?._id?.$oid || report?._id
 
       if (!reportId) {
-        setSubmitError('The report was created, but its ID was missing from the response.')
-        return
+        throw new Error('The generated report did not include an ID.')
       }
 
       try {
@@ -223,6 +223,50 @@ const Home = () => {
             <p className="home-privacy">Your resume is used only to prepare your report.</p>
           </div>
         </form>
+
+        <section className="recent-reports" aria-labelledby="recent-reports-title">
+          <div className="recent-reports-heading">
+            <div>
+              <p className="home-eyebrow">YOUR PREPARATION HISTORY</p>
+              <h2 id="recent-reports-title">Recent reports</h2>
+            </div>
+            {reports.length > 0 && <span>{reports.length} total</span>}
+          </div>
+
+          {loading && reports.length === 0 ? (
+            <p className="recent-reports-empty" role="status">Loading your reports...</p>
+          ) : reports.length === 0 ? (
+            <p className="recent-reports-empty">Your generated reports will appear here.</p>
+          ) : (
+            <ul className="recent-reports-list">
+              {reports.slice(0, 5).map((report) => {
+                const reportId = report._id?.$oid || report._id
+                if (!reportId) return null
+
+                return (
+                  <li key={reportId}>
+                    <Link className="recent-report" to={`/interview/${reportId}`}>
+                      <span className="recent-report-info">
+                        <strong>{report.title || 'Interview report'}</strong>
+                        <small>
+                          {report.createdAt
+                            ? new Date(report.createdAt).toLocaleDateString()
+                            : 'Date unavailable'}
+                        </small>
+                      </span>
+                      <span className="recent-report-score">
+                        {Number.isFinite(Number(report.matchScore))
+                          ? `${report.matchScore}% match`
+                          : 'View report'}
+                      </span>
+                      <ArrowUpRight size={18} aria-hidden="true" />
+                    </Link>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </section>
       </div>
     </main>
   )

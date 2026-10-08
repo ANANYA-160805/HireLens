@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router'
+import { useInterview } from '../hooks/useinterview.js'
 import {
 	ArrowLeft,
 	ArrowRight,
@@ -32,12 +33,26 @@ const sections = [
 ]
 
 const Interview = () => {
-	const { InterviewId } = useParams()
+	const { interviewId } = useParams()
 	const location = useLocation()
-	const [storedReport] = useState(() => reportFromStorage(InterviewId))
-	const report = location.state?.report || storedReport
+	const { report: fetchedReport, loading } = useInterview()
+	const [storedReport] = useState(() => reportFromStorage(interviewId))
+	const report = [fetchedReport, location.state?.report, storedReport].find(
+		(candidate) => String(candidate?._id?.$oid || candidate?._id || '') === interviewId
+	)
 	const [activeSection, setActiveSection] = useState('technical')
 	const [questionIndex, setQuestionIndex] = useState(0)
+
+	if (!report && loading) {
+		return (
+			<main className="interview-page interview-page--missing">
+				<div className="interview-empty-state" role="status">
+					<p className="interview-eyebrow">LOADING REPORT</p>
+					<h1>Preparing your interview report...</h1>
+				</div>
+			</main>
+		)
+	}
 
 	if (!report) {
 		return (
@@ -45,8 +60,8 @@ const Interview = () => {
 				<div className="interview-empty-state">
 					<span className="interview-empty-icon"><BookOpenCheck size={22} /></span>
 					<p className="interview-eyebrow">REPORT NOT AVAILABLE</p>
-					<h1>This report is not in this session.</h1>
-					<p>Generate a new interview report to view its questions, skill gaps, and preparation plan.</p>
+					<h1>This report is not available.</h1>
+					<p>Check that you are signed in and that this report belongs to your account, then try again.</p>
 					<Link className="interview-back-link" to="/home"><ArrowLeft size={16} /> Back to preparation</Link>
 				</div>
 			</main>

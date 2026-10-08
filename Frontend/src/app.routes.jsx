@@ -25,7 +25,7 @@ const router = createBrowserRouter([
     element: <AuthProvider><Register /></AuthProvider>
   },
   {
-    path: "/interview/:InterviewId",
+    path: "/interview/:interviewId",
     element: <AuthProvider><Protected><Interview /></Protected></AuthProvider>,
   }
 ]);
