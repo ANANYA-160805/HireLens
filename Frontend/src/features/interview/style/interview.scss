@@ -81,6 +81,65 @@
 		}
 	}
 
+	.interview-topbar-actions {
+		display: inline-flex;
+		flex: 0 0 auto;
+		align-items: center;
+		gap: 16px;
+	}
+
+	.interview-resume-btn {
+		display: inline-flex;
+		min-height: 38px;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		padding: 0 13px;
+		border: 1px solid var(--report-green);
+		border-radius: 6px;
+		color: #fff;
+		background: var(--report-green);
+		font: inherit;
+		font-size: 11px;
+		font-weight: 700;
+		white-space: nowrap;
+		cursor: pointer;
+		transition: background-color 160ms ease, border-color 160ms ease;
+
+		&:hover:not(:disabled) {
+			border-color: var(--report-teal);
+			background: var(--report-teal);
+		}
+
+		&:focus-visible {
+			outline: 3px solid rgba(22, 143, 145, 0.28);
+			outline-offset: 3px;
+		}
+
+		&:disabled {
+			opacity: 0.75;
+			cursor: wait;
+		}
+	}
+
+	.interview-resume-spinner {
+		animation: interview-resume-spin 1s linear infinite;
+	}
+
+	.interview-resume-error {
+		width: min(1440px, 100%);
+		margin: -12px auto 18px;
+		color: #a13b31;
+		font-size: 12px;
+		line-height: 1.5;
+	}
+
+	@keyframes interview-resume-spin {
+		to {
+			transform: rotate(360deg);
+		}
+	}
+
 	.interview-back-link {
 		display: inline-flex;
 		min-height: 36px;

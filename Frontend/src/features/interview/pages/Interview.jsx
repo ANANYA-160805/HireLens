@@ -12,7 +12,9 @@ import {
 	Code2,
 	Fingerprint,
 	MessageCircle,
+	Sparkles,
 	Target,
+	LoaderCircle,
 } from 'lucide-react'
 import '../style/interview.scss'
 
@@ -35,8 +37,10 @@ const sections = [
 const Interview = () => {
 	const { interviewId } = useParams()
 	const location = useLocation()
-	const { report: fetchedReport, loading } = useInterview()
+	const { report: fetchedReport, loading, getResumePdf } = useInterview()
 	const [storedReport] = useState(() => reportFromStorage(interviewId))
+	const [isGeneratingResume, setIsGeneratingResume] = useState(false)
+	const [resumeError, setResumeError] = useState('')
 	const report = [fetchedReport, location.state?.report, storedReport].find(
 		(candidate) => String(candidate?._id?.$oid || candidate?._id || '') === interviewId
 	)
@@ -75,6 +79,20 @@ const Interview = () => {
 	const skillGaps = report.skillGaps || []
 	const preparationPlan = report.preparationPlan || []
 	const matchScore = Math.max(0, Math.min(100, Number(report.matchScore) || 0))
+	const reportId = report._id?.$oid || report._id || interviewId
+
+	const handleGenerateResume = async () => {
+		if (isGeneratingResume || !reportId) return
+		setIsGeneratingResume(true)
+		setResumeError('')
+		try {
+			await getResumePdf(reportId)
+		} catch (error) {
+			setResumeError(error.message || 'Could not generate the resume PDF. Please try again.')
+		} finally {
+			setIsGeneratingResume(false)
+		}
+	}
 
 	const changeSection = (section) => {
 		setActiveSection(section)
@@ -96,10 +114,23 @@ const Interview = () => {
 					<span>INTERVIEW REPORT</span>
 					<span className="interview-report-id">{report.title || 'Role report'}</span>
 				</div>
-				<Link className="interview-back-link interview-back-link--top" to="/home">
-					<ArrowLeft size={15} /> New analysis
-				</Link>
+				<div className="interview-topbar-actions">
+					<button
+						className="interview-resume-btn"
+						type="button"
+						onClick={handleGenerateResume}
+						disabled={isGeneratingResume}
+					>
+						{isGeneratingResume
+							? <><LoaderCircle className="interview-resume-spinner" size={15} aria-hidden="true" /> Generating...</>
+							: <><Sparkles size={15} aria-hidden="true" /> AI Generate Resume</>}
+					</button>
+					<Link className="interview-back-link interview-back-link--top" to="/home">
+						<ArrowLeft size={15} /> New analysis
+					</Link>
+				</div>
 			</header>
+			{resumeError && <p className="interview-resume-error" role="alert" aria-live="polite">{resumeError}</p>}
 
 			<div className="interview-layout">
 				<aside className="interview-sidebar interview-sidebar--left" aria-label="Report sections">

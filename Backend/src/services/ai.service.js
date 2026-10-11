@@ -1,119 +1,441 @@
-const { GoogleGenAI } = require("@google/genai")
-const { z } = require("zod")
-const puppeteer = require("puppeteer")
+const { GoogleGenAI } = require("@google/genai");
+const { z } = require("zod");
+const { zodToJsonSchema } = require("zod-to-json-schema");
+const puppeteer = require("puppeteer");
 
 const ai = new GoogleGenAI({
-    apiKey: process.env.GOOGLE_GENAI_API_KEY
-})
+  apiKey: process.env.GOOGLE_GENAI_API_KEY,
+});
 
+function createServiceError(message, statusCode) {
+  const error = new Error(message);
+  error.statusCode = statusCode;
+  return error;
+}
+
+function ensureApiKeyConfigured() {
+  if (!process.env.GOOGLE_GENAI_API_KEY) {
+    throw createServiceError(
+      "Resume generation is not configured. Please contact support.",
+      503
+    );
+  }
+}
+
+function parseJsonResponse(responseText, label) {
+  if (!responseText || typeof responseText !== "string") {
+    throw new Error(`${label} returned an empty response.`);
+  }
+
+  try {
+    return JSON.parse(responseText);
+  } catch (error) {
+    throw new Error(
+      `${label} returned invalid JSON: ${error.message}`
+    );
+  }
+}
+
+// -----------------------------------------------------------------------------
+// INTERVIEW REPORT SCHEMA
+// -----------------------------------------------------------------------------
 
 const interviewReportSchema = z.object({
-    matchScore: z.number().min(0).max(100).describe("A score between 0 and 100 indicating how well the candidate's profile matches the job description"),
-    technicalQuestions: z.array(z.object({
-        question: z.string().describe("The technical question can be asked in the interview"),
-        intention: z.string().describe("The intention of interviewer behind asking this question"),
-        answer: z.string().describe("How to answer this question, what points to cover, what approach to take etc.")
-    })).min(5).describe("At least 5 role-specific technical questions, each with its intention and answer guidance"),
-    behavioralQuestions: z.array(z.object({
-        question: z.string().describe("The technical question can be asked in the interview"),
-        intention: z.string().describe("The intention of interviewer behind asking this question"),
-        answer: z.string().describe("How to answer this question, what points to cover, what approach to take etc.")
-    })).min(5).describe("At least 5 role-relevant behavioral questions, each with its intention and answer guidance"),
-    skillGaps: z.array(z.object({
-        skill: z.string().describe("The skill which the candidate is lacking"),
-        severity: z.enum([ "low", "medium", "high" ]).describe("The severity of this skill gap, i.e. how important is this skill for the job and how much it can impact the candidate's chances")
-    })).describe("List of skill gaps in the candidate's profile along with their severity"),
-    preparationPlan: z.array(z.object({
-        day: z.number().describe("The day number in the preparation plan, starting from 1"),
-        focus: z.string().describe("The main focus of this day in the preparation plan, e.g. data structures, system design, mock interviews etc."),
-        tasks: z.array(z.string()).describe("List of tasks to be done on this day to follow the preparation plan, e.g. read a specific book or article, solve a set of problems, watch a video etc.")
-    })).min(5).describe("A day-wise preparation plan with at least 5 days of focused tasks"),
-    title: z.string().describe("The title of the job for which the interview report is generated"),
-})
+  matchScore: z.number().min(0).max(100),
 
-async function generateInterviewReport({ resume, selfDescription, jobDescription }) {
+  technicalQuestions: z
+    .array(
+      z.object({
+        question: z.string(),
+        intention: z.string(),
+        answer: z.string(),
+      })
+    )
+    .min(5),
 
+  behavioralQuestions: z
+    .array(
+      z.object({
+        question: z.string(),
+        intention: z.string(),
+        answer: z.string(),
+      })
+    )
+    .min(5),
 
-    const prompt = `Generate a complete, specific interview preparation report using the candidate details below.
-                        Return at least 5 technical questions and 5 behavioral questions. Every question must include a realistic interview question, what the interviewer is assessing, and concrete guidance for a strong answer.
-                        Return a preparation plan covering at least 5 days, with a focus and actionable tasks for each day. List only genuine skill gaps; return an empty skillGaps array only if there are no meaningful gaps.
-                        Set matchScore to a number from 0 to 100 and title to the job title from the job description.
+  skillGaps: z.array(
+    z.object({
+      skill: z.string(),
+      severity: z.enum(["low", "medium", "high"]),
+    })
+  ),
 
-                        Resume: ${resume}
-                        Self Description: ${selfDescription}
-                        Job Description: ${jobDescription}
-`
+  preparationPlan: z
+    .array(
+      z.object({
+        day: z.number(),
+        focus: z.string(),
+        tasks: z.array(z.string()),
+      })
+    )
+    .min(5),
+
+  title: z.string(),
+});
+
+// -----------------------------------------------------------------------------
+// GENERATE INTERVIEW REPORT
+// -----------------------------------------------------------------------------
+
+async function generateInterviewReport({
+  resume,
+  selfDescription,
+  jobDescription,
+}) {
+  try {
+    ensureApiKeyConfigured();
+
+    const prompt = `
+Generate a complete interview preparation report using the candidate details below.
+
+Requirements:
+- Provide at least 5 technical questions and 5 behavioral questions.
+- Each question must include the question, interviewer intention, and answer guidance.
+- Provide a preparation plan covering at least 5 days.
+- Include genuine skill gaps and their severity.
+- Set matchScore between 0 and 100.
+- Set title to the target job title.
+- Do not invent candidate experience or skills.
+
+RESUME:
+${resume || "Not provided"}
+
+SELF-DESCRIPTION:
+${selfDescription || "Not provided"}
+
+JOB DESCRIPTION:
+${jobDescription || "Not provided"}
+`;
 
     const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt,
-        config: {
-            responseMimeType: "application/json",
-            responseSchema: z.toJSONSchema(interviewReportSchema),
-        }
-    })
+      model: "gemini-3-flash-preview",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: zodToJsonSchema(interviewReportSchema),
+      },
+    });
 
-    return interviewReportSchema.parse(JSON.parse(response.text))
+    const parsedResponse = parseJsonResponse(
+      response.text,
+      "Interview report"
+    );
 
+    return interviewReportSchema.parse(parsedResponse);
+  } catch (error) {
+    console.error("Failed to generate interview report:", error);
 
+    throw new Error(
+      `Unable to generate interview report: ${
+        error.message || "Unknown error"
+      }`
+    );
+  }
 }
 
+// -----------------------------------------------------------------------------
+// VALIDATE GENERATED RESUME HTML
+// -----------------------------------------------------------------------------
 
+function validateResumeHtml(html) {
+  if (typeof html !== "string" || !html.trim()) {
+    throw new Error("The resume generator returned empty HTML.");
+  }
+
+  const requiredPatterns = [
+    /<!doctype\s+html/i,
+    /<html\b/i,
+    /<head\b/i,
+    /<style\b/i,
+    /<body\b/i,
+    /<\/body\s*>/i,
+    /<\/html\s*>/i,
+  ];
+
+  for (const pattern of requiredPatterns) {
+    if (!pattern.test(html)) {
+      throw new Error(
+        `Generated resume HTML is missing a required element: ${pattern}`
+      );
+    }
+  }
+
+  return html;
+}
+
+// -----------------------------------------------------------------------------
+// CONVERT HTML TO PDF USING PUPPETEER
+// -----------------------------------------------------------------------------
 
 async function generatePdfFromHtml(htmlContent) {
-    const browser = await puppeteer.launch()
+  validateResumeHtml(htmlContent);
+
+  let browser;
+
+  try {
+    browser = await puppeteer.launch({
+      headless: true,
+    });
+
     const page = await browser.newPage();
-    await page.setContent(htmlContent, { waitUntil: "networkidle0" })
+
+    await page.setViewport({
+      width: 794,
+      height: 1123,
+      deviceScaleFactor: 1,
+    });
+
+    await page.setContent(htmlContent, {
+      waitUntil: "networkidle0",
+      timeout: 30000,
+    });
+
+    await page.emulateMediaType("print");
+
+    await page.evaluate(async () => {
+      if (document.fonts?.ready) {
+        await document.fonts.ready;
+      }
+    });
 
     const pdfBuffer = await page.pdf({
-        format: "A4", margin: {
-            top: "20mm",
-            bottom: "20mm",
-            left: "15mm",
-            right: "15mm"
-        }
-    })
+      format: "A4",
+      printBackground: true,
+      preferCSSPageSize: true,
+      displayHeaderFooter: false,
+      margin: {
+        top: "15mm",
+        bottom: "15mm",
+        left: "15mm",
+        right: "15mm",
+      },
+    });
 
-    await browser.close()
+    if (!pdfBuffer || pdfBuffer.length === 0) {
+      throw new Error("Puppeteer generated an empty PDF.");
+    }
 
-    return pdfBuffer
+    return Buffer.from(pdfBuffer);
+  } catch (error) {
+    console.error("Failed to generate PDF from HTML:", error);
+
+    throw createServiceError(
+      `Unable to generate PDF: ${error.message || "Unknown error"}`,
+      500
+    );
+  } finally {
+    if (browser) {
+      await browser.close().catch(() => {});
+    }
+  }
 }
 
-async function generateResumePdf({ resume, selfDescription, jobDescription }) {
+// -----------------------------------------------------------------------------
+// RESUME SCHEMA
+// -----------------------------------------------------------------------------
 
-    const resumePdfSchema = z.object({
-        html: z.string().describe("The HTML content of the resume which can be converted to PDF using any library like puppeteer")
-    })
+const resumePdfSchema = z.object({
+  html: z.string().describe(
+    "Complete self-contained HTML5 document for a professional resume."
+  ),
+});
 
-    const prompt = `Generate resume for a candidate with the following details:
-                        Resume: ${resume}
-                        Self Description: ${selfDescription}
-                        Job Description: ${jobDescription}
+// -----------------------------------------------------------------------------
+// GENERATE RESUME PDF
+// -----------------------------------------------------------------------------
 
-                        the response should be a JSON object with a single field "html" which contains the HTML content of the resume which can be converted to PDF using any library like puppeteer.
-                        The resume should be tailored for the given job description and should highlight the candidate's strengths and relevant experience. The HTML content should be well-formatted and structured, making it easy to read and visually appealing.
-                        The content of resume should be not sound like it's generated by AI and should be as close as possible to a real human-written resume.
-                        you can highlight the content using some colors or different font styles but the overall design should be simple and professional.
-                        The content should be ATS friendly, i.e. it should be easily parsable by ATS systems without losing important information.
-                        The resume should not be so lengthy, it should ideally be 1-2 pages long when converted to PDF. Focus on quality rather than quantity and make sure to include all the relevant information that can increase the candidate's chances of getting an interview call for the given job description.
-                    `
+async function generateResumePdf({
+  resume,
+  selfDescription,
+  jobDescription,
+}) {
+  try {
+    ensureApiKeyConfigured();
+
+    if (!resume && !selfDescription) {
+      throw createServiceError(
+        "Resume information or a self-description is required.",
+        400
+      );
+    }
+
+    if (!jobDescription || !jobDescription.trim()) {
+      throw createServiceError(
+        "A job description is required to tailor the resume.",
+        400
+      );
+    }
+
+    const prompt = `
+You are an expert resume writer, recruiter, ATS optimization specialist,
+and professional HTML/CSS resume designer.
+
+Create a polished, professional resume tailored to the target job using
+only the candidate information supplied below.
+
+CANDIDATE RESUME:
+${resume || "Not provided"}
+
+CANDIDATE SELF-DESCRIPTION:
+${selfDescription || "Not provided"}
+
+TARGET JOB DESCRIPTION:
+${jobDescription}
+
+FACTUAL ACCURACY:
+- Use only facts supported by the candidate information.
+- Never invent experience, internships, employers, dates, degrees, grades,
+  certifications, skills, responsibilities, or achievements.
+- Never fabricate numbers, performance metrics, or project results.
+- Preserve the candidate's actual name, contact information, links,
+  education details, and dates.
+- Do not claim expertise in a skill without supporting information.
+- Do not list ongoing courses as completed certifications.
+- Describe team projects accurately.
+- If information is missing, omit it rather than guessing.
+
+CONTENT:
+- Tailor the resume to the target job.
+- Prioritize relevant technical skills, experience, and projects.
+- Use job-description keywords naturally when supported by the candidate.
+- Write clear, concise, natural, professional language.
+- Avoid generic AI phrases, repetition, exaggeration, and buzzwords.
+- Use action-oriented bullet points without changing the underlying facts.
+- Include a short professional summary only if useful.
+- Include relevant sections when supported:
+  Contact Information, Professional Summary, Technical Skills,
+  Experience, Projects, Education, Certifications, and Achievements or Awards.
+- Put the most relevant sections first.
+- Omit empty sections and irrelevant personal details.
+- Keep the resume to one A4 page whenever the available relevant information
+  allows it. Use a second page only when needed to include relevant supported
+  facts without making the text too small or cramped.
+
+PROFESSIONAL DESIGN:
+- Create a modern, minimal, recruiter-quality resume.
+- Use a white background, dark charcoal text, and navy blue (#1F3A5F).
+- Use Arial, Helvetica, sans-serif.
+- Candidate name: 24-28pt bold.
+- Section headings: 11-13pt bold.
+- Body text: approximately 9.5-10.5pt.
+- Contact information: approximately 9-10pt.
+- Use readable line spacing and consistent margins.
+- Maintain consistent alignment, spacing, dates, and bullet indentation.
+- Use subtle horizontal rules where appropriate.
+- Use one column and a clear reading order.
+- Keep bullet points concise.
+- Avoid tables, multiple columns, sidebars, icons, photos, logos,
+  skill bars, charts, gradients, shadows, and decorative cards.
+- Avoid oversized headings, cramped text, and excessive blank space.
+- Ensure URLs and contact details wrap without overflowing.
+
+HTML REQUIREMENTS:
+- Return a complete HTML5 document.
+- Include <!DOCTYPE html>, <html lang="en">, <head>, UTF-8 metadata,
+  viewport metadata, <title>, <style>, and <body>.
+- Use semantic HTML elements such as main, section, h1, h2, p, ul, li,
+  strong, and a.
+- Keep all CSS inside the document.
+- Do not use JavaScript, external stylesheets, remote fonts, external
+  images, icon libraries, or CSS frameworks.
+- Use box-sizing: border-box.
+- Use normal document flow.
+- Do not use absolute positioning for the main layout.
+- Do not set fixed heights or use overflow rules that clip content.
+- Ensure all HTML tags are correctly nested and closed.
+- Use safe text wrapping for long URLs and contact information.
+- Do not use unnecessary page breaks.
+- Keep headings with their following content where possible.
+- Apply break-inside: avoid selectively to compact entries only.
+- Include @page { size: A4; margin: 15mm; }.
+- Include suitable @media print rules and print-color-adjust settings.
+- Make the HTML suitable for PDF rendering in Puppeteer and Chromium.
+
+ATS REQUIREMENTS:
+- Keep the resume single-column and text-based.
+- Use standard section headings and HTML bullet lists.
+- Do not embed contact details or important text in images.
+- Do not hide keywords or repeat them unnaturally.
+- Avoid complex layouts that can disrupt text extraction.
+
+OUTPUT CONTRACT:
+Return only a valid JSON object with exactly one property named "html".
+The value must be the complete HTML document encoded as a JSON string.
+Do not return Markdown fences, explanations, or extra properties.
+Do not return HTML outside the JSON object.
+
+Before returning, check that the resume is factual, relevant, concise,
+well-structured, readable, and uses self-contained HTML and CSS.
+`;
 
     const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt,
-        config: {
-            responseMimeType: "application/json",
-            responseSchema: zodToJsonSchema(resumePdfSchema),
-        }
-    })
+      model: "gemini-3-flash-preview",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: zodToJsonSchema(resumePdfSchema),
+      },
+    });
 
+    const jsonContent = parseJsonResponse(
+      response.text,
+      "Resume PDF HTML"
+    );
 
-    const jsonContent = JSON.parse(response.text)
+    const validatedResponse = resumePdfSchema.parse(jsonContent);
 
-    const pdfBuffer = await generatePdfFromHtml(jsonContent.html)
+    const html = validateResumeHtml(validatedResponse.html);
 
-    return pdfBuffer
+    const pdfBuffer = await generatePdfFromHtml(html);
 
+    return pdfBuffer;
+  } catch (error) {
+    console.error("Failed to generate resume PDF:", error);
+
+    if (error.statusCode) {
+      throw error;
+    }
+
+    const providerStatus = Number(
+      error.status || error.statusCode || error.response?.status
+    );
+
+    if (providerStatus === 429) {
+      throw createServiceError(
+        "Resume generation is temporarily rate-limited. Please try again shortly.",
+        429
+      );
+    }
+
+    if (providerStatus === 503) {
+      throw createServiceError(
+        "Resume generation is temporarily unavailable. Please try again shortly.",
+        503
+      );
+    }
+
+    throw createServiceError(
+      `Unable to generate resume PDF: ${error.message || "Unknown error"}`,
+      502
+    );
+  }
 }
 
-module.exports = { generateInterviewReport, generateResumePdf }
+// -----------------------------------------------------------------------------
+// EXPORTS
+// -----------------------------------------------------------------------------
+
+module.exports = {
+  generateInterviewReport,
+  generateResumePdf,
+};

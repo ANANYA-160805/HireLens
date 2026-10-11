@@ -59,11 +59,40 @@ export const useInterview = () => {
             const url = window.URL.createObjectURL(new Blob([response], { type: "application/pdf" }))
             const link = document.createElement("a")
             link.href = url
-            link.setAttribute("download", `resume_${interviewReportId}.pdf`)
+            link.setAttribute("download", "AI_Generated_Resume.pdf")
             document.body.appendChild(link)
             link.click()
             link.remove()
-            window.URL.revokeObjectURL(url)
+            window.setTimeout(() => window.URL.revokeObjectURL(url), 1000)
+        } catch (error) {
+            const status = error.response?.status
+            const responseData = error.response?.data
+            let message = ""
+
+            if (responseData instanceof Blob) {
+                const responseText = await responseData.text()
+                try {
+                    message = JSON.parse(responseText).message || ""
+                } catch {
+                    message = responseText
+                }
+            } else if (typeof responseData?.message === "string") {
+                message = responseData.message
+            }
+
+            if (status === 401) {
+                throw new Error("Your session has expired. Please sign in and try again.", { cause: error })
+            }
+            if (status === 403) {
+                throw new Error("You are not allowed to download this resume.", { cause: error })
+            }
+            if (status === 429 || status === 503) {
+                throw new Error(message || "Resume generation is temporarily unavailable. Please try again shortly.", { cause: error })
+            }
+            if (!error.response) {
+                throw new Error("Could not reach the server. Check your connection and try again.", { cause: error })
+            }
+            throw new Error(message || "Could not generate the resume PDF. Please try again.", { cause: error })
         } finally {
             setLoading(false)
         }
