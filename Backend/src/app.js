@@ -5,6 +5,7 @@ const cookieParser = require("cookie-parser")
 const cors = require("cors")
 
 const app = express()
+const publicDirectory = path.join(__dirname, "../Public")
 
 
 app.use(cors({
@@ -14,7 +15,7 @@ app.use(cors({
 
 app.use(express.json())
 app.use(cookieParser())
-app.use(express.static(path.join(__dirname, "../public")))
+app.use(express.static(publicDirectory))
 
 /* require all the routes here */
 const authRouter = require("./routes/auth.routes")
@@ -27,7 +28,7 @@ app.use("/api/interview", interviewRouter)
 
 
 app.get("*name", (req, res) => {
-    res.sendFile(path.join(__dirname, "../public/index.html"))
+    res.sendFile(path.join(publicDirectory, "index.html"))
 })
 
 
